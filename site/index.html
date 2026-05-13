@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GPT Image 2 中文离线提示词工具</title>
+  <style>
+    :root {
+      --bg: #f6efe6;
+      --bg-2: #fffaf4;
+      --card: rgba(255, 255, 255, 0.84);
+      --card-strong: rgba(255, 255, 255, 0.96);
+      --line: rgba(212, 194, 176, 0.7);
+      --line-soft: rgba(238, 226, 214, 0.8);
+      --text: #2f2823;
+      --muted: #7a6d62;
+      --orange: #ff8c37;
+      --orange-deep: #f06d18;
+      --blue: #2f6df6;
+      --blue-deep: #1d53cc;
+      --pink: #ffe6ec;
+      --pink-deep: #d9507e;
+      --shadow-lg: 0 22px 60px rgba(130, 95, 62, 0.14);
+      --shadow-md: 0 12px 28px rgba(141, 112, 83, 0.12);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --step-size: 30px;
+      --step-line: 26px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(255, 167, 84, 0.25), transparent 28%),
+        radial-gradient(circle at right 18%, rgba(255, 214, 154, 0.36), transparent 26%),
+        radial-gradient(circle at bottom right, rgba(89, 140, 255, 0.14), transparent 24%),
+        linear-gradient(140deg, #f8f1e8 0%, #fffaf6 42%, #f3f7ff 100%);
+      font-family: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+
+    body {
+      padding: 18px 14px 22px;
+    }
+
+    .page {
+      max-width: 1560px;
+      margin: 0 auto;
+    }
+
+    .window-shell {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 251, 247, 0.93));
+      border: 1px solid rgba(255, 255, 255, 0.75);
+      box-shadow: var(--shadow-lg);
+      border-radius: 34px;
+      overflow: hidden;
+      backdrop-filter: blur(20px);
+    }
+
+    .browser-bar {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(233, 222, 211, 0.92);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(251, 245, 238, 0.88));
+    }
+
+    .browser-left,
+    .browser-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .traffic {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.65);
+    }
+
+    .traffic.red { background: #ff7d72; }
+    .traffic.yellow { background: #f6bf5a; }
+    .traffic.green { background: #5fd18d; }
+
+    .mini-btn {
+      border: 1px solid var(--line-soft);
+      background: rgba(255, 255, 255, 0.78);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1;
+      padding: 7px 10px;
+      border-radius: 999px;
+    }
+
+    .address-bar {
+      display: flex;
+      justify-content: center;
+    }
+
+    .address-chip {
+      width: min(620px, 100%);
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(223, 213, 202, 0.92);
+      background: rgba(255, 255, 255, 0.88);
+      color: #8e8479;
+      font-size: 13px;
+      text-align: center;
+      box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.65);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.06fr) minmax(400px, 0.94fr);
+      gap: 14px;
+      padding: 12px;
+      min-height: calc(100vh - 96px);
+    }
+
+    .left-pane,
+    .right-pane {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(255, 252, 249, 0.8));
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: 28px;
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(14px);
+      min-height: 700px;
+    }
+
+    .left-pane {
+      padding: 16px 16px 14px 16px;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      gap: 12px;
+    }
+
+    .right-pane {
+      padding: 16px;
+      display: grid;
+      grid-template-rows: auto auto minmax(280px, 1.45fr) minmax(140px, 0.75fr) minmax(140px, 0.75fr) auto;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .brand-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .logo-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: radial-gradient(circle at 30% 30%, #3b2c1f, #121212);
+      color: #ffd097;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      box-shadow: 0 8px 18px rgba(55, 42, 29, 0.24);
+      flex-shrink: 0;
+    }
+
+    .brand h1,
+    .brand h2 {
+      margin: 0;
+      line-height: 1.1;
+    }
+
+    .brand h1 {
+      font-size: 18px;
+    }
+
+    .brand h2 {
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .brand-sub {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .mode-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .mode-chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid rgba(228, 217, 207, 0.92);
+      background: rgba(255, 255, 255, 0.78);
+      color: var(--muted);
+    }
+
+    .mode-chip.active {
+      color: white;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--blue), var(--blue-deep));
+      box-shadow: 0 10px 20px rgba(47, 109, 246, 0.24);
+    }
+
+    .intro-card {
+      padding: 14px 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(247, 218, 190, 0.94);
+      background: linear-gradient(135deg, rgba(255, 244, 229, 0.98), rgba(255, 249, 242, 0.86));
+    }
+
+    .intro-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 15px;
+    }
+
+    .intro-card p,
+    .intro-card ul,
+    .section-meta,
+    .field-help,
+    .hint,
+    .result-note,
+    .status-line,
+    .source-list a,
+    .footer-note {
+      color: var(--muted);
+    }
+
+    .intro-card p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .form-stack {
+      display: grid;
+      gap: 14px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .step-card {
+      position: relative;
+      padding: 16px 16px 16px 54px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 251, 248, 0.84));
+      border: 1px solid rgba(235, 222, 210, 0.95);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .step-card::before {
+      content: "";
+      position: absolute;
+      left: 23px;
+      top: 48px;
+      bottom: calc(-1 * var(--step-line));
+      width: 1px;
+      border-left: 1px dashed rgba(240, 140, 55, 0.45);
+    }
+
+    .step-card:last-child::before {
+      display: none;
+    }
+
+    .step-index {
+      position: absolute;
+      left: 8px;
+      top: 15px;
+      width: var(--step-size);
+      height: var(--step-size);
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, #ffb56a, #ff8e3c);
+      color: white;
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: 0 8px 18px rgba(255, 140, 55, 0.28);
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .section-title-wrap h3 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .section-title-wrap .en {
+      margin-left: 6px;
+      color: #a18d7d;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .section-meta {
+      margin-top: 4px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .section-pill {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255, 237, 221, 0.96);
+      color: var(--orange-deep);
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .field.span-2 {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #5d4e43;
+    }
+
+    label .en {
+      font-size: 11px;
+      color: #aa9585;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-left: 4px;
+    }
+
+    input,
+    textarea,
+    select,
+    pre,
+    .result-box {
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(225, 213, 203, 0.95);
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--text);
+      font: inherit;
+    }
+
+    input,
+    select {
+      min-height: 44px;
+      padding: 11px 13px;
+    }
+
+    textarea {
+      min-height: 92px;
+      padding: 12px 13px;
+      resize: vertical;
+      line-height: 1.65;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: rgba(255, 140, 55, 0.85);
+      box-shadow: 0 0 0 4px rgba(255, 140, 55, 0.12);
+    }
+
+    .field-help {
+      font-size: 12px;
+      line-height: 1.55;
+      margin: 0;
+    }
+
+    .inline-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(112px, 1fr));
+      gap: 10px;
+    }
+
+    .range-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="range"] {
+      min-height: auto;
+      padding: 0;
+      accent-color: var(--orange);
+    }
+
+    .range-value {
+      min-width: 54px;
+      text-align: center;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255, 241, 226, 0.96);
+      color: var(--orange-deep);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .btn {
+      min-height: 48px;
+      border: 0;
+      border-radius: 14px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn.orange {
+      color: white;
+      background: linear-gradient(135deg, var(--orange), var(--orange-deep));
+      box-shadow: 0 12px 24px rgba(240, 109, 24, 0.26);
+    }
+
+    .btn.blue {
+      color: white;
+      background: linear-gradient(135deg, var(--blue), var(--blue-deep));
+      box-shadow: 0 12px 24px rgba(47, 109, 246, 0.24);
+    }
+
+    .btn.white {
+      color: #4f433b;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(230, 220, 211, 0.96);
+    }
+
+    .pane-title-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .pane-title-row h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .pane-title-row p {
+      margin: 4px 0 0;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .summary-chip {
+      padding: 9px 10px 8px;
+      border-radius: 14px;
+      border: 1px solid rgba(241, 210, 221, 0.96);
+      background: linear-gradient(180deg, rgba(255, 235, 241, 0.96), rgba(255, 246, 248, 0.9));
+    }
+
+    .summary-chip strong {
+      display: block;
+      font-size: 11px;
+      color: #ac4469;
+      margin-bottom: 4px;
+    }
+
+    .summary-chip span {
+      display: block;
+      font-size: 11px;
+      color: #7c6671;
+      line-height: 1.35;
+    }
+
+    .summary-chip .mini-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 4px;
+    }
+
+    .summary-chip .mini-tags b {
+      padding: 4px 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.82);
+      color: #9c5c74;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .status-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      border: 1px solid rgba(233, 224, 214, 0.95);
+      background: rgba(255, 252, 249, 0.85);
+    }
+
+    .status-panel.compact {
+      width: min(100%, 360px);
+      margin-left: auto;
+      padding: 8px 10px;
+      gap: 8px;
+      border-radius: 14px;
+    }
+
+    .status-line {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .status-panel.compact .status-line {
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .status-flag {
+      align-self: start;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(255, 241, 226, 0.96);
+      color: var(--orange-deep);
+    }
+
+    .status-flag.ok {
+      background: rgba(226, 248, 236, 0.98);
+      color: #1a7a4a;
+    }
+
+    .status-flag.warn {
+      background: rgba(255, 243, 227, 0.98);
+      color: #b56917;
+    }
+
+    .status-wrap {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: auto;
+    }
+
+    .output-card {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid rgba(235, 223, 213, 0.95);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 251, 247, 0.84));
+      min-height: 0;
+    }
+
+    .output-card.output-card-prompt {
+      min-height: 0;
+    }
+
+    .output-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .output-head h3 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .result-note {
+      margin: 4px 0 0;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .result-box,
+    pre {
+      min-height: 136px;
+      padding: 13px 14px;
+      margin: 0;
+      overflow: auto;
+      line-height: 1.65;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(255, 255, 255, 0.96));
+    }
+
+    .output-card-prompt .result-box {
+      min-height: 260px;
+      padding: 16px 18px;
+      line-height: 1.8;
+      font-size: 13px;
+    }
+
+    pre {
+      font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+      white-space: pre;
+      line-height: 1.6;
+    }
+
+    .source-card {
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid rgba(235, 223, 213, 0.95);
+      background: linear-gradient(180deg, rgba(255, 248, 241, 0.96), rgba(255, 255, 255, 0.88));
+    }
+
+    .source-card h3 {
+      margin: 0 0 6px;
+      font-size: 15px;
+    }
+
+    .source-list {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .source-list a {
+      text-decoration: none;
+    }
+
+    .source-list a:hover {
+      color: var(--blue-deep);
+      text-decoration: underline;
+    }
+
+    .footer-note {
+      font-size: 11px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1240px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .right-pane,
+      .left-pane {
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 900px) {
+      body {
+        padding: 10px;
+      }
+
+      .browser-bar {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .browser-left,
+      .browser-right {
+        justify-content: center;
+      }
+
+      .brand-row,
+      .pane-title-row,
+      .section-head,
+      .output-head,
+      .status-panel {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+
+      .mode-row {
+        justify-content: flex-start;
+      }
+
+      .field-grid,
+      .summary-grid,
+      .toolbar,
+      .inline-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .workspace {
+        padding: 10px;
+      }
+
+      .status-wrap {
+        justify-content: stretch;
+      }
+
+      .status-panel.compact {
+        width: 100%;
+        margin-left: 0;
+      }
+
+      .output-card-prompt .result-box {
+        min-height: 180px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="window-shell">
+      <div class="browser-bar">
+        <div class="browser-left">
+          <span class="traffic red"></span>
+          <span class="traffic yellow"></span>
+          <span class="traffic green"></span>
+          <span class="mini-btn">⌂</span>
+          <span class="mini-btn">↺</span>
+        </div>
+        <div class="address-bar">
+          <div class="address-chip">本地离线页 · GPT Image 2 中文提示词工作台 · 不会发出任何 API 请求</div>
+        </div>
+        <div class="browser-right">
+          <span class="mini-btn">API OK</span>
+          <span class="mini-btn">Light</span>
+          <span class="mini-btn">设置</span>
+        </div>
+      </div>
+
+      <div class="workspace">
+        <section class="left-pane">
+          <div class="brand-row">
+            <div class="brand">
+              <div class="logo-badge">PROMPT</div>
+              <div>
+                <h1>Image Prompt</h1>
+                <div class="brand-sub">Via ChatGPT 5.5 · 中文优先 · 离线整理</div>
+              </div>
+            </div>
+            <div class="mode-row">
+              <span class="mode-chip active">提示词工具</span>
+              <span class="mode-chip">gpt-image-2</span>
+              <span class="mode-chip">本地 HTML</span>
+            </div>
+          </div>
+
+          <div class="intro-card">
+            <strong>图片提示词输入关系图</strong>
+            <p>
+              这个页面只负责把中文需求整理成更适合 <code>gpt-image-2</code> 的 prompt、参数 JSON 和示例代码。
+              当前依据官方资料校正了尺寸、质量、格式、压缩和背景说明，并保留参考图那种双栏工作台体验。
+            </p>
+          </div>
+
+          <div class="form-stack">
+            <section class="step-card">
+              <div class="step-index">01</div>
+              <div class="section-head">
+                <div class="section-title-wrap">
+                  <h3>基础信息 <span class="en">Brief</span></h3>
+                  <div class="section-meta">先交代用途、画幅倾向和优先级，让模型知道这是广告图、封面图还是说明型视觉。</div>
+                </div>
+                <span class="section-pill">创作定位</span>
+              </div>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="topic">主题</label>
+                  <input id="topic" type="text" placeholder="例如：春季新品冷萃咖啡 KV、产品海报、游戏封面图">
+                  <p class="field-help">一句话概括要生成什么。</p>
+                </div>
+                <div class="field">
+                  <label for="usage">用途</label>
+                  <input id="usage" type="text" placeholder="例如：电商头图、社媒封面、落地页首屏、演示页配图">
+                  <p class="field-help">用途会写进开头，帮助模型判断完成度和构图方式。</p>
+                </div>
+                <div class="field">
+                  <label for="orientation">画幅倾向</label>
+                  <select id="orientation">
+                    <option value="">未特别指定</option>
+                    <option value="横版">横版</option>
+                    <option value="竖版">竖版</option>
+                    <option value="方图">方图</option>
+                    <option value="超宽画面">超宽画面</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="priority">画面优先级</label>
+                  <select id="priority">
+                    <option value="">未特别指定</option>
+                    <option value="先保证主体清晰，再强化场景氛围">主体优先</option>
+                    <option value="先保证氛围完整，再安排主体细节">氛围优先</option>
+                    <option value="先保证排版空间和构图秩序，再补充装饰细节">构图优先</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+
+            <section class="step-card">
+              <div class="step-index">02</div>
+              <div class="section-head">
+                <div class="section-title-wrap">
+                  <h3>主体与场景 <span class="en">Core</span></h3>
+                  <div class="section-meta">按官方 prompting guide 的思路，明确场景、主体、关键细节和用途。</div>
+                </div>
+                <span class="section-pill">内容骨架</span>
+              </div>
+              <div class="field-grid">
+                <div class="field span-2">
+                  <label for="subject">主体</label>
+                  <textarea id="subject" placeholder="例如：一瓶透明玻璃冷萃咖啡放在浅色石台中央，瓶身带极简标签与冷凝水珠，旁边有半切柑橘与薄荷叶"></textarea>
+                </div>
+                <div class="field span-2">
+                  <label for="scene">场景</label>
+                  <textarea id="scene" placeholder="例如：清晨感开放式咖啡吧台，背景轻微虚化，窗外有柔和自然光，桌面有淡淡反射"></textarea>
+                </div>
+                <div class="field">
+                  <label for="action">动作或状态</label>
+                  <input id="action" type="text" placeholder="例如：静置展示、向镜头微倾、正被手轻轻拿起">
+                </div>
+                <div class="field">
+                  <label for="environment">环境细节</label>
+                  <input id="environment" type="text" placeholder="例如：少量冰块、咖啡豆、亚麻布、木质托盘，但不要喧宾夺主">
+                </div>
+              </div>
+            </section>
+
+            <section class="step-card">
+              <div class="step-index">03</div>
+              <div class="section-head">
+                <div class="section-title-wrap">
+                  <h3>构图与镜头 <span class="en">Layout</span></h3>
+                  <div class="section-meta">如果画面需要标题区、价格区或留白，一定明确写出来，减少结构失控。</div>
+                </div>
+                <span class="section-pill">镜头表达</span>
+              </div>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="composition">构图</label>
+                  <input id="composition" type="text" placeholder="例如：主体居中偏下，左上方留标题区，层次清晰，有商业海报秩序">
+                </div>
+                <div class="field">
+                  <label for="camera">镜头感</label>
+                  <input id="camera" type="text" placeholder="例如：中近景产品摄影，略低机位，浅景深，商业静物广告感">
+                </div>
+                <div class="field">
+                  <label for="clarity">清晰度要求</label>
+                  <input id="clarity" type="text" placeholder="例如：主体锐利、边缘干净、瓶身标签可读、材质层次自然">
+                </div>
+                <div class="field">
+                  <label for="detailFocus">细节重点</label>
+                  <input id="detailFocus" type="text" placeholder="例如：玻璃折射、水珠、液体层次、柑橘切面、真实阴影">
+                </div>
+              </div>
+            </section>
+
+            <section class="step-card">
+              <div class="step-index">04</div>
+              <div class="section-head">
+                <div class="section-title-wrap">
+                  <h3>风格与光线 <span class="en">Style</span></h3>
+                  <div class="section-meta">可单独控制风格、材质、颜色和光线，必要时把要出现的文字放进引号。</div>
+                </div>
+                <span class="section-pill">视觉语言</span>
+              </div>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="style">画风</label>
+                  <input id="style" type="text" placeholder="例如：写实商业摄影、复古海报、日系插画、未来感产品渲染">
+                </div>
+                <div class="field">
+                  <label for="material">材质</label>
+                  <input id="material" type="text" placeholder="例如：通透玻璃、冷凝水珠、磨砂金属、纸张纤维">
+                </div>
+                <div class="field">
+                  <label for="color">色彩</label>
+                  <input id="color" type="text" placeholder="例如：暖橙与冷绿平衡、奶油白底、低饱和高级感">
+                </div>
+                <div class="field">
+                  <label for="light">光线</label>
+                  <input id="light" type="text" placeholder="例如：柔和侧逆光、自然散射、清晨高光、边缘轮廓光">
+                </div>
+                <div class="field span-2">
+                  <label for="mood">氛围</label>
+                  <input id="mood" type="text" placeholder="例如：清爽、精致、轻盈、安静、有春季上新质感">
+                </div>
+              </div>
+            </section>
+
+            <section class="step-card">
+              <div class="step-index">05</div>
+              <div class="section-head">
+                <div class="section-title-wrap">
+                  <h3>补充约束 <span class="en">Constraints</span></h3>
+                  <div class="section-meta">官方指南建议把必须保留和禁止出现的内容说清楚，尤其是品牌元素和画面文字。</div>
+                </div>
+                <span class="section-pill">避免跑偏</span>
+              </div>
+              <div class="field-grid">
+                <div class="field span-2">
+                  <label for="textContent">画面文字</label>
+                  <textarea id="textContent" placeholder="例如：如果需要文字，仅出现“春季限定”“Fresh Roast”，字样清晰、对比明确、不要乱码。若无需文字，请写“无文字”或留空。"></textarea>
+                </div>
+                <div class="field span-2">
+                  <label for="mustInclude">必须包含</label>
+                  <textarea id="mustInclude" placeholder="例如：产品包装完整出现、品牌主色为橙蓝配色、保留左上角大面积可排版留白"></textarea>
+                </div>
+                <div class="field span-2">
+                  <label for="avoid">禁止出现</label>
+                  <textarea id="avoid" placeholder="例如：不要多余手指、不要裁切主体、不要脏污背景、不要乱码文字、不要夸张炫光、不要水印"></textarea>
+                </div>
+              </div>
+            </section>
+
+            <section class="step-card">
+              <div class="step-index">06</div>
+              <div class="section-head">
+                <div class="section-title-wrap">
+                  <h3>官方参数 <span class="en">API</span></h3>
+                  <div class="section-meta">只保留官网明确可映射的字段：<code>prompt</code>、<code>size</code>、<code>quality</code>、<code>output_format</code>、<code>background</code>、<code>output_compression</code>。</div>
+                </div>
+                <span class="section-pill">官网对齐</span>
+              </div>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="sizeMode">尺寸方式 <span class="en">size</span></label>
+                  <select id="sizeMode">
+                    <option value="auto">auto（推荐）</option>
+                    <option value="preset">常用预设</option>
+                    <option value="custom">自定义尺寸</option>
+                  </select>
+                </div>
+                <div class="field" id="presetWrap">
+                  <label for="sizePreset">常用尺寸 <span class="en">size</span></label>
+                  <select id="sizePreset">
+                    <option value="1024x1024">1024x1024 · 方图</option>
+                    <option value="1536x1024">1536x1024 · 横版</option>
+                    <option value="1024x1536">1024x1536 · 竖版</option>
+                    <option value="2048x2048">2048x2048 · 2K 方图</option>
+                    <option value="2048x1152">2048x1152 · 2K 横版</option>
+                    <option value="3840x2160">3840x2160 · 4K 横版</option>
+                    <option value="2160x3840">2160x3840 · 4K 竖版</option>
+                  </select>
+                </div>
+                <div class="field span-2 hidden" id="customSizeWrap">
+                  <label for="sizeLabel">自定义尺寸 <span class="en">size</span></label>
+                  <div class="inline-grid">
+                    <input id="sizeLabel" type="text" placeholder="例如：活动头图、落地页首屏、桌面壁纸">
+                    <input id="sizeWidth" type="number" min="16" step="16" value="2048" placeholder="宽度">
+                    <input id="sizeHeight" type="number" min="16" step="16" value="1152" placeholder="高度">
+                  </div>
+                  <p class="field-help">官方规则：最长边 ≤ 3840、宽高都必须是 16 的倍数、长短边比例不超过 3:1、总像素介于 655,360 到 8,294,400。</p>
+                  <p class="field-help" id="sizeFeedback">当前尺寸会按官方规则实时检查；超过 2560×1440 总像素会标记为实验性输出。</p>
+                </div>
+                <div class="field">
+                  <label for="quality">质量 <span class="en">quality</span></label>
+                  <select id="quality">
+                    <option value="auto">auto · 自动</option>
+                    <option value="low">low · 草稿 / 快速</option>
+                    <option value="medium">medium · 平衡</option>
+                    <option value="high">high · 最终成品</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="outputFormat">输出格式 <span class="en">output_format</span></label>
+                  <select id="outputFormat">
+                    <option value="png">png · 默认无损</option>
+                    <option value="jpeg">jpeg · 更快更轻</option>
+                    <option value="webp">webp · 体积友好</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="background">背景 <span class="en">background</span></label>
+                  <select id="background">
+                    <option value="auto">auto · 交给模型选择</option>
+                    <option value="opaque">opaque · 不透明背景</option>
+                  </select>
+                  <p class="field-help">根据官方 image generation guide，<code>gpt-image-2</code> 目前不支持 <code>transparent</code>。</p>
+                </div>
+                <div class="field">
+                  <label for="compression">压缩率 <span class="en">output_compression</span></label>
+                  <div class="range-row">
+                    <input id="compression" type="range" min="0" max="100" value="82">
+                    <span class="range-value" id="compressionValue">82</span>
+                  </div>
+                  <p class="field-help" id="compressionHelp">仅当输出格式为 <code>jpeg</code> 或 <code>webp</code> 时写入参数。</p>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="toolbar">
+            <button class="btn orange" id="generateBtn" type="button">生成提示词预览</button>
+            <button class="btn blue" id="copyPromptBtn" type="button">复制 Prompt</button>
+            <button class="btn white" id="copyParamsBtn" type="button">复制参数</button>
+            <button class="btn white" id="sampleBtn" type="button">填入示例</button>
+            <button class="btn white" id="clearBtn" type="button">清空重来</button>
+          </div>
+        </section>
+
+        <aside class="right-pane">
+          <div class="pane-title-row">
+            <div>
+              <h2>Prompt 预览 / Output</h2>
+              <p>右侧内容会随着左侧字段实时整理，适合直接复制到你自己的脚本、工作流或接口调试环境。</p>
+            </div>
+            <div class="mode-row">
+              <span class="mode-chip active">AI 预览</span>
+              <span class="mode-chip">JSON</span>
+              <span class="mode-chip">JS</span>
+            </div>
+          </div>
+
+          <div class="summary-grid">
+            <div class="summary-chip">
+              <strong>主题摘要</strong>
+              <span id="summaryTopic">等待输入主题与用途</span>
+            </div>
+            <div class="summary-chip">
+              <strong>构图摘要</strong>
+              <span id="summaryLayout">等待补充构图与镜头</span>
+            </div>
+            <div class="summary-chip">
+              <strong>风格摘要</strong>
+              <span id="summaryStyle">等待补充风格与光线</span>
+            </div>
+            <div class="summary-chip">
+              <strong>关键标签</strong>
+              <div class="mini-tags" id="summaryTags"></div>
+            </div>
+          </div>
+
+          <section class="output-card output-card-prompt">
+            <div class="output-head">
+              <div>
+                <h3>最终中文 Prompt</h3>
+                <p class="result-note">按官网 prompting 思路，使用“用途/场景/主体/细节/约束”的结构组织，更适合后续继续微调。</p>
+              </div>
+            </div>
+            <div class="result-box" id="promptOutput">请先在左侧填写信息，系统会在这里生成最终提示词。</div>
+          </section>
+
+          <section class="output-card">
+            <div class="output-head">
+              <div>
+                <h3>参数 JSON</h3>
+                <p class="result-note">保留英文键名，避免复制到 Images API 时还要手动改字段。</p>
+              </div>
+            </div>
+            <pre id="paramsOutput">{}</pre>
+          </section>
+
+          <section class="output-card">
+            <div class="output-head">
+              <div>
+                <h3>JavaScript 示例代码</h3>
+                <p class="result-note">示例默认使用 <code>client.images.generate(...)</code>，仅供复制，不会在本页执行。</p>
+              </div>
+            </div>
+            <pre id="codeOutput">// 左侧填写后，这里会自动生成可复制的示例请求代码。</pre>
+          </section>
+
+          <section class="source-card">
+            <h3>官方资料</h3>
+            <ol class="source-list">
+              <li><a href="https://developers.openai.com/api/docs/models/gpt-image-2" target="_blank" rel="noreferrer">GPT Image 2 模型页</a></li>
+              <li><a href="https://platform.openai.com/docs/guides/image-generation" target="_blank" rel="noreferrer">Image Generation Guide</a></li>
+              <li><a href="https://developers.openai.com/" target="_blank" rel="noreferrer">OpenAI Developers 首页（含 GPT Image 2 专题入口）</a></li>
+            </ol>
+            <p class="footer-note">
+              说明：当前页的尺寸校验、<code>background</code> 限制和 <code>output_compression</code> 行为，按官方 guide 中对 <code>gpt-image-2</code> 的最新说明整理。
+            </p>
+          </section>
+
+          <div class="status-wrap">
+            <div class="status-panel compact">
+              <p class="status-line" id="statusText">等待输入。填写左侧字段后，这里会实时生成中文 prompt、参数 JSON 和示例代码。</p>
+              <span class="status-flag" id="statusFlag">待填写</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const fields = {
+      topic: document.getElementById("topic"),
+      usage: document.getElementById("usage"),
+      orientation: document.getElementById("orientation"),
+      priority: document.getElementById("priority"),
+      subject: document.getElementById("subject"),
+      scene: document.getElementById("scene"),
+      action: document.getElementById("action"),
+      environment: document.getElementById("environment"),
+      composition: document.getElementById("composition"),
+      camera: document.getElementById("camera"),
+      clarity: document.getElementById("clarity"),
+      detailFocus: document.getElementById("detailFocus"),
+      style: document.getElementById("style"),
+      material: document.getElementById("material"),
+      color: document.getElementById("color"),
+      light: document.getElementById("light"),
+      mood: document.getElementById("mood"),
+      textContent: document.getElementById("textContent"),
+      mustInclude: document.getElementById("mustInclude"),
+      avoid: document.getElementById("avoid"),
+      sizeMode: document.getElementById("sizeMode"),
+      sizePreset: document.getElementById("sizePreset"),
+      sizeLabel: document.getElementById("sizeLabel"),
+      sizeWidth: document.getElementById("sizeWidth"),
+      sizeHeight: document.getElementById("sizeHeight"),
+      quality: document.getElementById("quality"),
+      outputFormat: document.getElementById("outputFormat"),
+      background: document.getElementById("background"),
+      compression: document.getElementById("compression")
+    };
+
+    const promptOutput = document.getElementById("promptOutput");
+    const paramsOutput = document.getElementById("paramsOutput");
+    const codeOutput = document.getElementById("codeOutput");
+    const statusText = document.getElementById("statusText");
+    const statusFlag = document.getElementById("statusFlag");
+    const sizeFeedback = document.getElementById("sizeFeedback");
+    const compressionValue = document.getElementById("compressionValue");
+    const compressionHelp = document.getElementById("compressionHelp");
+    const presetWrap = document.getElementById("presetWrap");
+    const customSizeWrap = document.getElementById("customSizeWrap");
+    const summaryTopic = document.getElementById("summaryTopic");
+    const summaryLayout = document.getElementById("summaryLayout");
+    const summaryStyle = document.getElementById("summaryStyle");
+    const summaryTags = document.getElementById("summaryTags");
+
+    function clean(value) {
+      return String(value || "").trim();
+    }
+
+    function sentence(text) {
+      const value = clean(text);
+      if (!value) return "";
+      return /[。！？.!?]$/.test(value) ? value : value + "。";
+    }
+
+    function joinSentences(parts) {
+      return parts.filter(Boolean).join(" ");
+    }
+
+    function buildPrompt() {
+      const topic = clean(fields.topic.value);
+      const usage = clean(fields.usage.value);
+      const orientation = clean(fields.orientation.value);
+      const priority = clean(fields.priority.value);
+      const subject = clean(fields.subject.value);
+      const scene = clean(fields.scene.value);
+      const action = clean(fields.action.value);
+      const environment = clean(fields.environment.value);
+      const composition = clean(fields.composition.value);
+      const camera = clean(fields.camera.value);
+      const clarity = clean(fields.clarity.value);
+      const detailFocus = clean(fields.detailFocus.value);
+      const style = clean(fields.style.value);
+      const material = clean(fields.material.value);
+      const color = clean(fields.color.value);
+      const light = clean(fields.light.value);
+      const mood = clean(fields.mood.value);
+      const textContent = clean(fields.textContent.value);
+      const mustInclude = clean(fields.mustInclude.value);
+      const avoid = clean(fields.avoid.value);
+
+      const introParts = [];
+      if (topic) introParts.push("请生成一张围绕“" + topic + "”的高完成度图片");
+      else introParts.push("请生成一张主体明确、信息清楚、细节自然的高完成度图片");
+      if (usage) introParts.push("用途为" + usage);
+      if (orientation) introParts.push("画幅倾向为" + orientation);
+
+      const promptSections = [];
+      promptSections.push(sentence(introParts.join("，") + "。"));
+      if (priority) promptSections.push(sentence("创作时请遵循这个优先级：" + priority));
+      if (scene) promptSections.push(sentence("场景：" + scene));
+      if (subject) promptSections.push(sentence("主体：" + subject));
+      if (action) promptSections.push(sentence("动作或状态：" + action));
+      if (environment) promptSections.push(sentence("环境补充：" + environment));
+
+      const shotParts = [];
+      if (composition) shotParts.push("构图要求为" + composition);
+      if (camera) shotParts.push("镜头或视角为" + camera);
+      if (clarity) shotParts.push("清晰度要求为" + clarity);
+      if (detailFocus) shotParts.push("重点刻画" + detailFocus);
+      if (shotParts.length) promptSections.push(sentence(shotParts.join("，")));
+
+      const styleParts = [];
+      if (style) styleParts.push("整体风格为" + style);
+      if (material) styleParts.push("材质表现突出" + material);
+      if (color) styleParts.push("色彩倾向为" + color);
+      if (light) styleParts.push("光线表现为" + light);
+      if (mood) styleParts.push("氛围是" + mood);
+      if (styleParts.length) promptSections.push(sentence(styleParts.join("，")));
+
+      if (textContent) {
+        promptSections.push(sentence("如果画面中需要文字，请严格遵循以下要求：" + textContent));
+      }
+      if (mustInclude) {
+        promptSections.push(sentence("必须包含：" + mustInclude));
+      }
+      if (avoid) {
+        promptSections.push(sentence("禁止出现：" + avoid));
+      }
+
+      promptSections.push("请尽量保证主体识别清晰、构图有秩序、细节真实自然，避免无意义元素堆叠、文字乱码、比例失真或廉价塑料感。");
+
+      return joinSentences(promptSections).trim();
+    }
+
+    function validateCustomSize() {
+      const width = Number(fields.sizeWidth.value);
+      const height = Number(fields.sizeHeight.value);
+
+      if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+        return {
+          valid: false,
+          size: null,
+          experimental: false,
+          feedback: "请输入有效的宽度和高度数值。"
+        };
+      }
+
+      const maxEdge = Math.max(width, height);
+      const minEdge = Math.min(width, height);
+      const totalPixels = width * height;
+      const ratio = maxEdge / minEdge;
+      const errors = [];
+
+      if (maxEdge > 3840) errors.push("最长边超过 3840px");
+      if (width % 16 !== 0 || height % 16 !== 0) errors.push("宽高不是 16 的倍数");
+      if (ratio > 3) errors.push("长短边比例超过 3:1");
+      if (totalPixels < 655360 || totalPixels > 8294400) errors.push("总像素不在 655,360 到 8,294,400 之间");
+
+      const experimental = totalPixels > 3686400;
+      const label = clean(fields.sizeLabel.value);
+
+      if (errors.length) {
+        return {
+          valid: false,
+          size: width + "x" + height,
+          experimental,
+          feedback: "当前自定义尺寸不符合官方规则：" + errors.join("；") + "。"
+        };
+      }
+
+      const notes = ["当前尺寸 " + width + "x" + height + " 符合官方 size 约束"];
+      if (label) notes.push("用途备注：" + label);
+      if (experimental) {
+        notes.push("该尺寸总像素高于 2560×1440，官方将此类输出标记为实验性");
+      }
+
+      return {
+        valid: true,
+        size: width + "x" + height,
+        experimental,
+        feedback: notes.join("；") + "。"
+      };
+    }
+
+    function getSizeState() {
+      const mode = fields.sizeMode.value;
+      if (mode === "auto") {
+        return {
+          valid: true,
+          value: "auto",
+          experimental: false,
+          feedback: "当前使用 `size: auto`，由模型自动选择输出尺寸。"
+        };
+      }
+      if (mode === "preset") {
+        const value = fields.sizePreset.value;
+        const experimentalPresets = new Set(["2048x2048", "2048x1152", "3840x2160", "2160x3840"]);
+        const experimental = experimentalPresets.has(value);
+        let feedback = "当前使用预设尺寸 `" + value + "`。";
+        if (experimental) {
+          feedback += " 该尺寸属于较高像素输出，可视作实验性或更高成本方案。";
+        }
+        return {
+          valid: true,
+          value,
+          experimental,
+          feedback
+        };
+      }
+      return validateCustomSize();
+    }
+
+    function buildParams(promptText) {
+      const sizeState = getSizeState();
+      const params = {
+        prompt: promptText,
+        size: sizeState.value,
+        quality: fields.quality.value,
+        output_format: fields.outputFormat.value,
+        background: fields.background.value
+      };
+
+      if (fields.outputFormat.value === "jpeg" || fields.outputFormat.value === "webp") {
+        params.output_compression = Number(fields.compression.value);
+      }
+
+      return { params, sizeState };
+    }
+
+    function buildCode(params) {
+      const payload = {
+        model: "gpt-image-2",
+        ...params
+      };
+
+      return [
+        "import OpenAI from \"openai\";",
+        "",
+        "const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });",
+        "",
+        "const result = await client.images.generate(" + JSON.stringify(payload, null, 2) + ");",
+        "",
+        "// GPT Image 模型默认返回 base64 图像数据，可按你的项目方式继续处理。",
+        "console.log(result.data[0]);"
+      ].join("\n");
+    }
+
+    function updateSummaryTags() {
+      const tags = [];
+      const addTag = (value) => {
+        if (clean(value) && tags.length < 8) tags.push(clean(value));
+      };
+
+      addTag(fields.orientation.value);
+      addTag(fields.style.value);
+      addTag(fields.light.value);
+      addTag(fields.mood.value);
+      addTag(fields.quality.value);
+      addTag(getSizeState().value);
+      addTag(fields.outputFormat.value);
+      addTag(fields.background.value);
+
+      summaryTags.innerHTML = "";
+      if (!tags.length) {
+        const placeholder = document.createElement("b");
+        placeholder.textContent = "等待输入";
+        summaryTags.appendChild(placeholder);
+        return;
+      }
+
+      tags.forEach((tag) => {
+        const node = document.createElement("b");
+        node.textContent = tag;
+        summaryTags.appendChild(node);
+      });
+    }
+
+    function updateSummaries() {
+      summaryTopic.textContent = clean(fields.topic.value) || clean(fields.usage.value) || "等待输入主题与用途";
+
+      const layoutParts = [clean(fields.composition.value), clean(fields.camera.value)].filter(Boolean);
+      summaryLayout.textContent = layoutParts.length ? layoutParts.join(" / ") : "等待补充构图与镜头";
+
+      const styleParts = [clean(fields.style.value), clean(fields.light.value), clean(fields.color.value)].filter(Boolean);
+      summaryStyle.textContent = styleParts.length ? styleParts.join(" / ") : "等待补充风格与光线";
+
+      updateSummaryTags();
+    }
+
+    function updateSizeUi() {
+      const mode = fields.sizeMode.value;
+      presetWrap.classList.toggle("hidden", mode !== "preset");
+      customSizeWrap.classList.toggle("hidden", mode !== "custom");
+
+      const sizeState = getSizeState();
+      sizeFeedback.textContent = sizeState.feedback;
+      sizeFeedback.style.color = sizeState.valid ? "#1a7a4a" : "#b56917";
+    }
+
+    function updateCompressionUi() {
+      const format = fields.outputFormat.value;
+      const enabled = format === "jpeg" || format === "webp";
+
+      compressionValue.textContent = fields.compression.value;
+      fields.compression.disabled = !enabled;
+      compressionHelp.textContent = enabled
+        ? "当前格式为 `" + format + "`，会把 `output_compression` 一起写入参数。"
+        : "当前格式为 `png`，示例参数会自动省略 `output_compression`。";
+    }
+
+    function updateStatus(promptText, sizeState) {
+      const hasMeaningfulInput = [
+        fields.topic.value,
+        fields.usage.value,
+        fields.subject.value,
+        fields.scene.value,
+        fields.style.value
+      ].some((value) => clean(value));
+
+      if (!hasMeaningfulInput) {
+        statusText.textContent = "等待输入。填写左侧字段后，这里会实时生成中文 prompt、参数 JSON 和示例代码。";
+        statusFlag.textContent = "待填写";
+        statusFlag.className = "status-flag";
+        return;
+      }
+
+      if (!sizeState.valid) {
+        statusText.textContent = "内容已经生成，但当前自定义尺寸不符合官方规则。建议先修正尺寸，再复制参数到 API 请求里。";
+        statusFlag.textContent = "需修正";
+        statusFlag.className = "status-flag warn";
+        return;
+      }
+
+      if (sizeState.experimental) {
+        statusText.textContent = "内容已更新。当前尺寸属于较高像素或实验性输出，适合成品图，但通常会有更高成本或更长耗时。";
+        statusFlag.textContent = "实验性";
+        statusFlag.className = "status-flag warn";
+        return;
+      }
+
+      if (promptText.length < 60) {
+        statusText.textContent = "已经生成基础 prompt。若想让结果更稳，建议继续补充场景、构图、风格和禁止项。";
+        statusFlag.textContent = "可继续补充";
+        statusFlag.className = "status-flag ok";
+        return;
+      }
+
+      statusText.textContent = "实时内容已更新，可以直接复制 prompt、参数 JSON 或示例代码到你自己的工作流中。";
+      statusFlag.textContent = "准备就绪";
+      statusFlag.className = "status-flag ok";
+    }
+
+    function refresh() {
+      updateSizeUi();
+      updateCompressionUi();
+
+      const promptText = buildPrompt();
+      const bundle = buildParams(promptText);
+
+      promptOutput.textContent = promptText;
+      paramsOutput.textContent = JSON.stringify(bundle.params, null, 2);
+      codeOutput.textContent = buildCode(bundle.params);
+
+      updateSummaries();
+      updateStatus(promptText, bundle.sizeState);
+    }
+
+    async function copyText(text, successMessage) {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const area = document.createElement("textarea");
+          area.value = text;
+          area.style.position = "fixed";
+          area.style.opacity = "0";
+          document.body.appendChild(area);
+          area.focus();
+          area.select();
+          document.execCommand("copy");
+          document.body.removeChild(area);
+        }
+
+        statusText.textContent = successMessage;
+        statusFlag.textContent = "已复制";
+        statusFlag.className = "status-flag ok";
+      } catch (error) {
+        statusText.textContent = "复制失败，请手动选中文本复制。";
+        statusFlag.textContent = "复制失败";
+        statusFlag.className = "status-flag warn";
+      }
+    }
+
+    function fillSample() {
+      fields.topic.value = "春季冷萃咖啡新品海报";
+      fields.usage.value = "电商头图与社媒活动封面";
+      fields.orientation.value = "横版";
+      fields.priority.value = "先保证排版空间和构图秩序，再补充装饰细节";
+      fields.subject.value = "一瓶透明玻璃冷萃咖啡放在浅色石台中央，瓶身带极简标签与清晰冷凝水珠，旁边摆放半切柑橘和少量薄荷叶";
+      fields.scene.value = "清晨感开放式咖啡吧台，背景柔和虚化，窗外有自然光透入，桌面有轻微反射和干净阴影";
+      fields.action.value = "主体静置展示，传达清爽、可饮用和新品上市的感觉";
+      fields.environment.value = "保留少量冰块、咖啡豆和浅色亚麻布作为点缀，但不要喧宾夺主";
+      fields.composition.value = "主体居中偏下，左上方预留标题区域，构图秩序清晰，适合后续加活动文案";
+      fields.camera.value = "中近景产品摄影，略低机位，浅景深，商业静物广告感";
+      fields.clarity.value = "产品瓶身、标签、液体质感和水珠细节清晰可辨";
+      fields.detailFocus.value = "玻璃折射、水珠、液体层次、柑橘切面、真实桌面阴影";
+      fields.style.value = "写实商业摄影";
+      fields.material.value = "通透玻璃、冷凝水珠、细腻石台纹理";
+      fields.color.value = "奶油白底配暖橙和冷绿色点缀，整体干净明亮";
+      fields.light.value = "柔和侧逆光，自然高光，边缘轮廓光明确";
+      fields.mood.value = "清爽、精致、轻盈、有春季上新的高级感";
+      fields.textContent.value = "如果需要文字，仅出现“春季限定”“Fresh Roast”，字样清晰、对比明确、不要乱码。";
+      fields.mustInclude.value = "产品包装完整出现，左上角保留大面积留白，品牌主色延续橙蓝调性";
+      fields.avoid.value = "不要多余手部，不要第二瓶产品，不要脏污背景，不要夸张炫光，不要水印，不要乱码文字";
+      fields.sizeMode.value = "preset";
+      fields.sizePreset.value = "1536x1024";
+      fields.sizeLabel.value = "电商头图";
+      fields.sizeWidth.value = 2048;
+      fields.sizeHeight.value = 1152;
+      fields.quality.value = "high";
+      fields.outputFormat.value = "jpeg";
+      fields.background.value = "opaque";
+      fields.compression.value = 82;
+
+      refresh();
+      statusText.textContent = "示例内容已填入，你可以继续改成自己的项目描述。";
+      statusFlag.textContent = "示例已载入";
+      statusFlag.className = "status-flag ok";
+    }
+
+    function clearAll() {
+      Object.values(fields).forEach((element) => {
+        if (element.tagName === "SELECT") return;
+        if (element.type === "range") return;
+        if (element.type === "number") return;
+        element.value = "";
+      });
+
+      fields.orientation.value = "";
+      fields.priority.value = "";
+      fields.sizeMode.value = "auto";
+      fields.sizePreset.value = "1024x1024";
+      fields.sizeLabel.value = "";
+      fields.sizeWidth.value = 2048;
+      fields.sizeHeight.value = 1152;
+      fields.quality.value = "auto";
+      fields.outputFormat.value = "png";
+      fields.background.value = "auto";
+      fields.compression.value = 82;
+
+      refresh();
+      statusText.textContent = "已清空，随时可以重新开始新的提示词整理。";
+      statusFlag.textContent = "已重置";
+      statusFlag.className = "status-flag ok";
+    }
+
+    document.querySelectorAll("input, textarea, select").forEach((element) => {
+      element.addEventListener("input", refresh);
+      element.addEventListener("change", refresh);
+    });
+
+    document.getElementById("generateBtn").addEventListener("click", refresh);
+    document.getElementById("copyPromptBtn").addEventListener("click", () => copyText(promptOutput.textContent, "最终中文 Prompt 已复制。"));
+    document.getElementById("copyParamsBtn").addEventListener("click", () => copyText(paramsOutput.textContent, "参数 JSON 已复制。"));
+    document.getElementById("sampleBtn").addEventListener("click", fillSample);
+    document.getElementById("clearBtn").addEventListener("click", clearAll);
+
+    refresh();
+  </script>
+</body>
+</html>
